@@ -9,6 +9,12 @@ class Node:
         self.demand = demand
 
 
+    def positiv(self):
+        if self.demand >= 5:
+            return 'green'
+        else:
+            return 'red'
+
 class Gen:
 
     def __init__(self, nod_id, generation, cost):
@@ -23,3 +29,13 @@ class Branch:
         self.node_from = node_from
         self.node_to = node_to
         self.flow = flow
+
+    def positiveFlowDirection(self, branches):
+        for branch in branches:
+            if self.flow < 0:
+                temp = self.node_from
+                self.node_from = self.node_to
+                self.node_to = temp
+                self.flow *= -1
+        return branch
+
