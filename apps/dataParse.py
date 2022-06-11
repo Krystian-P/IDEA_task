@@ -1,59 +1,28 @@
+import io
 import h5py
-import numpy as np
 from apps.clustering import *
-from models.Node import Node
-from models.Branch import Branch
-from models.Gen import Gen
-from models.PowerGrid import PowerGrid
 
-def getData(hour):
+
+def getData(hour, nCluster=1):
     with h5py.File('C:/Users/Krystian/Desktop/IDEA_task/task_data.hdf5', 'r') as f:
-
         nodes = np.array(f.get(f'/results/hour_{hour}/nodes'))
         branches = np.array(f.get(f'/results/hour_{hour}/branches'))
         gens = np.array(f.get(f'/results/hour_{hour}/gens'))
 
         nodes = nodeBalance(nodes, branches, gens)
-        branches = branchesParse(branches)
-        clusterData(branches)
+        branches = branchesParse(branches, nCluster)
         dataDict = {'nodes': nodes,
                     'branches': branches,
                     'gens': gens
                     }
 
-        #return dataDict
-        return createObjects(dataDict)
+        return dataDict
 
 
-def createObjects(dataDict):
-    nodesList = createNodes(dataDict['nodes'])
-    branchesList = createBranches(dataDict['branches'])
-    gensList = createGens((dataDict['gens']))
-    return PowerGrid[nodesList, branchesList, gensList]
-
-
-def createNodes(dataList):
-    nodeList = []
-    for row in dataList:
-        node = Node(row[0], row[1], row[2], row[3])
-        nodeList.append(node)
-    return nodeList
-
-
-def createBranches(dataList):
-    branchList = []
-    for row in dataList:
-        branch = Branch(row[0], row[1], row[2])
-        branchList.append(branch)
-    return branchList
-
-
-def createGens(dataList):
-    gensList = []
-    for row in dataList:
-        gen = Gen(row[0], row[1], row[2])
-        gensList.append(gen)
-    return gensList
+def read_hdf_from_buffer(buffer):
+    f = io.BytesIO(buffer)
+    h = h5py.File(f, 'r')
+    nodes = np.array(h.get(f'/results/hour_1/nodes'))
 
 
 def nodeBalance(nodeArray, branchesArray, generatorsArray):
@@ -72,23 +41,11 @@ def nodeBalance(nodeArray, branchesArray, generatorsArray):
     return np.c_[nodeArray, balance]
 
 
-def branchesParse(branches):
+def branchesParse(branches, nCluster):
     for branch in branches:
         if branch[2] < 0:
             branch[[0, 1]] = branch[[1, 0]]
             branch[2] *= -1
+
+    branches = np.c_[branches, clusterData(branches, nCluster)]
     return branches
-
-
-def prepNodes(nodesList):
-    graph_nodes_list = [(str(node.nod_id), str("{:.2f}".format(node.nod_id)), str(node.positivCheck())) for node in
-                        nodesList]
-    return graph_nodes_list
-
-
-def prepBranches(branchesList):
-    graph_nodes_list = []
-    for branch in branchesList:
-        graph_nodes_list.append((str(branch.node_from), str(branch.node_to), str("{:.2f}".format(branch.flow))))
-    return graph_nodes_list
-

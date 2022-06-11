@@ -1,8 +1,12 @@
 from models.PowerGrid import PowerGrid
 import dash_cytoscape as cyto
-from dash import html, dcc, Input, Output, Dash
+from dash import html, dcc, Input, Output, Dash, State, dash_table
 from apps.dataParse import *
 from apps.templates import *
+import base64
+import datetime
+import io
+import plotly.express as px
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = Dash(__name__, external_stylesheets=external_stylesheets)
@@ -19,6 +23,7 @@ default_stylesheet = [
         'selector': 'edge',
         'style': {
             'label': 'data(label)',
+            'line-color': 'data(color)',
             'curve-style': 'bezier',
             'source-arrow-shape': 'triangle',
             'arrow-scale': 2,
@@ -46,36 +51,84 @@ styles = {
     }
 }
 
-app.layout = html.Div([html.Div([html.H1("Power Grid Analysis")], style={'textAlign': "center"}),
+app.layout = html.Div([
+    html.Div([html.H1("Power Grid Analysis")], style={'textAlign': "center"}),
+    html.Div([
+        dcc.Slider(1, 24, 1,
+                   value=12,
+                   id='my-slider',
+                   className='six columns'
+                   ),
+        dcc.Slider(1, 6, 1,
+                   value=1,
+                   id='cluster-slider',
+                   className='three columns'
+                   ),
+        dcc.Upload(id='upload-data',
+                   children=html.Div([
+                       'Drag and drop or',
+                       html.A(' select file')
+                   ]),
+                   style={
+                       'width': '15%',
+                       'height': '60px',
+                       'lineHeight': '60px',
+                       'borderWidth': '1px',
+                       'borderStyle': 'dashed',
+                       'borderRadius': '5px',
+                       'textAlign': 'center',
+                       'margin': '10px'
+                   },
+                   className='two columns'
+                   )
+    ], className='row'),
 
-                       dcc.Slider(1, 24, 1,
-                                  value=12,
-                                  id='my-slider'
-                                  ),
+    cyto.Cytoscape(
+        id='cytoscape-callbacks-1',
+        elements=[],
+        style={'width': '100%', 'height': '570px'},
+        layout={
+            'name': 'breadthfirst',
+        },
 
+        zoom=100,
+        userZoomingEnabled=False,
+        userPanningEnabled=False,
+        stylesheet=default_stylesheet
+    ),
 
-                       cyto.Cytoscape(
-                           id='cytoscape-callbacks-1',
-                           elements=[],
-                           style={'width': '100%', 'height': '700px'},
-                           layout={
-                                'name': 'breadthfirst',
-                           },
-                           stylesheet=default_stylesheet
-                       ),
-                        html.P(id='cytoscape-tapNodeData-output'),
-                        html.Pre(id='cytoscape-tapNodeData-json', style=styles['pre'])
-                       ])
+    html.Div([html.H1(children=''),
+              dcc.Graph(id='genCost',
+                        style={
+                            'width': '50%',
+                            'height': '400px'
+                        },
+                        className='six columns'
+                        ),
+              html.Pre(id='cytoscape-tapNodeData-json',
+                       style=styles['pre'],
+                       className='six columns'),
+              ], className='row'),
+    html.P(id='cytoscape-tapNodeData-output'),
+
+], className='row')
+
 
 @app.callback(
-    Output('cytoscape-callbacks-1', 'elements'),
-    Input('my-slider', 'value')
+    [Output('cytoscape-callbacks-1', 'elements'),
+     Output('genCost', 'figure')],
+    [Input('my-slider', 'value'),
+     Input('upload-data', 'contents'),
+     Input('cluster-slider', 'value')],
 )
-def hourUpdate(value):
+def hourUpdate(value, content, nCluster):
+    if content:
+        content_type, content_string = content.split(',')
+        decoded = base64.b64decode(content_string)
+        # print(read_hdf_from_buffer(decoded))
 
-    dataSet = getData(value)
-    powerGrid = PowerGrid(dataSet)
-
+    dataSet = getData(value, nCluster)
+    powerGrid = PowerGrid(dataSet, nCluster)
     nodes = [
         {
             'data': {'id': short, 'label': label},
@@ -83,55 +136,67 @@ def hourUpdate(value):
             'classes': color
         }
         for short, label, color in (
-            prepNodes(dataSet[0])
+            powerGrid.prepNodes()
         )
     ]
-
 
     edges = [
-        {'data': {'id': source + target, 'source': source, 'target': target, 'label': label}}
-        for target, source, label in (
-            prepBranches(dataSet[1])
+        {'data': {'id': source + target, 'source': source, 'target': target, 'label': label, 'color': color}}
+        for target, source, label, color in (
+            powerGrid.prepBranches()
         )
     ]
-    return nodes + edges
 
 
-@app.callback(Output('cytoscape-tapNodeData-json', 'children'),
-              Input('cytoscape-callbacks-1', 'tapNodeData'))
-def displayTapNodeData(data):
-    return format(data)
+    figure = px.bar(powerGrid.costPlotGenerators(),
+                    title=f'Koszt produkcji jednostki energi o godzinie: {value}:00',
+                    x='Lokalizacja generatora',
+                    y='Generowana Moc',
+                    barmode='stack'
+                    )
+
+    return nodes + edges, figure
 
 
-
-@app.callback(Output('cytoscape-callbacks-1', 'stylesheet'),
-              Input('cytoscape-callbacks-1', 'tapNodeData'),
-              )
-def displayTapNodeData(data):
-    id_ = data['id']
-    new_style = [{
-        'selector': f'[source = "{id_}"]',
-        'style': {
-            'line-color': 'green',
-            'arrow-scale': 3,
-            'source-arrow-color': 'green'
-        }
-    },
-        {
-            'selector': f'[target = "{id_}"]',
+@app.callback(
+    [Output('cytoscape-callbacks-1', 'stylesheet'),
+     Output('cluster-slider', 'value')],
+    Input('cytoscape-callbacks-1', 'tapNodeData'),
+)
+def displayTapNodeData2(data):
+    if data:
+        val = data['id']
+        new_style = [{
+            'selector': f'[source = "{val}"]',
             'style': {
-                'line-color': 'red',
+                'line-color': 'green',
                 'arrow-scale': 3,
-                'source-arrow-color': 'red'
+                'source-arrow-color': 'green'
             }
         },
-        {
-            'selector': f'[id = "{id_}"]',
-            'style': {
-                'background-color': 'blue',
+            {
+                'selector': f'[target = "{val}"]',
+                'style': {
+                    'line-color': 'red',
+                    'arrow-scale': 3,
+                    'source-arrow-color': 'red'
+                }
+            },
+            {
+                'selector': f'[id = "{val}"]',
+                'style': {
+                    'background-color': 'blue',
+                }
             }
-        }
-    ]
-    return default_stylesheet + new_style
+        ]
+    else:
+        return default_stylesheet
+    return default_stylesheet + new_style, 1
 
 
+@app.callback(
+    Output('cytoscape-tapNodeData-json', 'children'),
+    Input('cytoscape-callbacks-1', 'tapNodeData')
+)
+def displayTapNodeData(data):
+    return format(data)
