@@ -1,18 +1,11 @@
-
+from models.PowerGrid import PowerGrid
 import dash_cytoscape as cyto
 from dash import html, dcc, Input, Output, Dash
-from apps.PowerGridAnalysis import *
+from apps.dataParse import *
+from apps.templates import *
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = Dash(__name__, external_stylesheets=external_stylesheets)
-styles = {
-    'pre': {
-        'border': 'thin lightgrey solid',
-        'overflowX': 'scroll'
-    }
-}
-
-
 
 default_stylesheet = [
     {
@@ -44,8 +37,14 @@ default_stylesheet = [
         }
     },
 ]
-
-
+styles = {
+    'pre': {
+        'border': 'thin lightgrey solid',
+        'overflowX': 'scroll',
+        'width': '30%',
+        'height': '50px'
+    }
+}
 
 app.layout = html.Div([html.Div([html.H1("Power Grid Analysis")], style={'textAlign': "center"}),
 
@@ -65,33 +64,8 @@ app.layout = html.Div([html.Div([html.H1("Power Grid Analysis")], style={'textAl
                            stylesheet=default_stylesheet
                        ),
                         html.P(id='cytoscape-tapNodeData-output'),
+                        html.Pre(id='cytoscape-tapNodeData-json', style=styles['pre'])
                        ])
-
-
-@app.callback(Output('cytoscape-callbacks-1', 'stylesheet'),
-              Input('cytoscape-callbacks-1', 'tapNodeData'),
-              )
-def displayTapNodeData(data):
-    id_=data['id']
-    print(data)
-    new_style = [{
-        'selector': f'[source = "{id_}"]',
-        'style': {
-            'line-color': 'green',
-            'arrow-scale': 3,
-            'source-arrow-color': 'green'
-        }
-    },
-    {
-        'selector': f'[target = "{id_}"]',
-        'style': {
-            'line-color': 'red',
-            'arrow-scale': 3,
-            'source-arrow-color': 'red'
-        }
-    }
-    ]
-    return default_stylesheet + new_style
 
 @app.callback(
     Output('cytoscape-callbacks-1', 'elements'),
@@ -99,7 +73,8 @@ def displayTapNodeData(data):
 )
 def hourUpdate(value):
 
-    gridLayout = getGridLayout(value)[0]
+    dataSet = getData(value)
+    powerGrid = PowerGrid(dataSet)
 
     nodes = [
         {
@@ -108,14 +83,55 @@ def hourUpdate(value):
             'classes': color
         }
         for short, label, color in (
-            prepNodes(gridLayout['nodes'])
+            prepNodes(dataSet[0])
         )
     ]
 
+
     edges = [
         {'data': {'id': source + target, 'source': source, 'target': target, 'label': label}}
-        for source, target, label in (
-            prepBranches(gridLayout['branches'])
+        for target, source, label in (
+            prepBranches(dataSet[1])
         )
     ]
     return nodes + edges
+
+
+@app.callback(Output('cytoscape-tapNodeData-json', 'children'),
+              Input('cytoscape-callbacks-1', 'tapNodeData'))
+def displayTapNodeData(data):
+    return format(data)
+
+
+
+@app.callback(Output('cytoscape-callbacks-1', 'stylesheet'),
+              Input('cytoscape-callbacks-1', 'tapNodeData'),
+              )
+def displayTapNodeData(data):
+    id_ = data['id']
+    new_style = [{
+        'selector': f'[source = "{id_}"]',
+        'style': {
+            'line-color': 'green',
+            'arrow-scale': 3,
+            'source-arrow-color': 'green'
+        }
+    },
+        {
+            'selector': f'[target = "{id_}"]',
+            'style': {
+                'line-color': 'red',
+                'arrow-scale': 3,
+                'source-arrow-color': 'red'
+            }
+        },
+        {
+            'selector': f'[id = "{id_}"]',
+            'style': {
+                'background-color': 'blue',
+            }
+        }
+    ]
+    return default_stylesheet + new_style
+
+
