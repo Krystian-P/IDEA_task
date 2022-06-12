@@ -6,7 +6,6 @@ class Node:
         self.demand = demand
         self.balance = balance
 
-
     def positivCheck(self):
         if self.balance >= 0:
             return 'green'

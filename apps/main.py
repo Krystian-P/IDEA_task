@@ -1,16 +1,14 @@
 from models.PowerGrid import PowerGrid
+from models.Colors import Colors
 import dash_cytoscape as cyto
-from dash import html, dcc, Input, Output, Dash, State, dash_table
+from dash import html, dcc, Input, Output, Dash, dash_table
 from apps.dataParse import *
-from apps.templates import *
+
 import base64
-import datetime
-import io
-import plotly.express as px
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = Dash(__name__, external_stylesheets=external_stylesheets)
-
+powerGrid = None
 default_stylesheet = [
     {
         'selector': 'node',
@@ -26,6 +24,7 @@ default_stylesheet = [
             'line-color': 'data(color)',
             'curve-style': 'bezier',
             'source-arrow-shape': 'triangle',
+            'arrow-color': 'data(color)',
             'arrow-scale': 2,
         }
     },
@@ -40,7 +39,7 @@ default_stylesheet = [
         'style': {
             'background-color': 'red',
         }
-    },
+    }
 ]
 styles = {
     'pre': {
@@ -52,14 +51,19 @@ styles = {
 }
 
 app.layout = html.Div([
-    html.Div([html.H1("Power Grid Analysis")], style={'textAlign': "center"}),
+    html.Div([html.H3("Power Grid Analysis")], style={'textAlign': "center"}),
+    html.Div([html.P("Hour: ", className='six columns'),
+              html.P("Amount of clusters:", className='three columns')],
+             style={'textAlign': "center"},
+             className='row'),
+
     html.Div([
         dcc.Slider(1, 24, 1,
                    value=12,
                    id='my-slider',
                    className='six columns'
                    ),
-        dcc.Slider(1, 6, 1,
+        dcc.Slider(1, 15, 1,
                    value=1,
                    id='cluster-slider',
                    className='three columns'
@@ -82,41 +86,54 @@ app.layout = html.Div([
                    className='two columns'
                    )
     ], className='row'),
+    html.Div([
+        cyto.Cytoscape(
+            id='cytoscape-callbacks-1',
+            elements=[],
+            style={'width': '80%', 'height': '570px'},
+            layout={
+                'name': 'breadthfirst'
+            },
+            responsive=True,
+            zoom=100,
+            userZoomingEnabled=False,
+            userPanningEnabled=False,
+            stylesheet=default_stylesheet,
+            className='nine columns'
+        ),
+        dash_table.DataTable(
+            id='clusterData',
+            style_table={'width': '20%'}
+        )
+    ], className='row'),
+    html.Div([
+        dash_table.DataTable(
+            id='nodeTable',
+            style_cell={'textAlign': 'center'},
+        ),
 
-    cyto.Cytoscape(
-        id='cytoscape-callbacks-1',
-        elements=[],
-        style={'width': '100%', 'height': '570px'},
-        layout={
-            'name': 'breadthfirst',
-        },
-
-        zoom=100,
-        userZoomingEnabled=False,
-        userPanningEnabled=False,
-        stylesheet=default_stylesheet
+    ], className='row'),
+    html.Div([dash_table.DataTable(
+        id='genCost',
+        style_cell={'textAlign': 'center'},
+        style_table={'width': '50%'}
     ),
-
-    html.Div([html.H1(children=''),
-              dcc.Graph(id='genCost',
-                        style={
-                            'width': '50%',
-                            'height': '400px'
-                        },
-                        className='six columns'
-                        ),
-              html.Pre(id='cytoscape-tapNodeData-json',
-                       style=styles['pre'],
-                       className='six columns'),
-              ], className='row'),
-    html.P(id='cytoscape-tapNodeData-output'),
+        html.P(id='cytoscape-mouseoverNodeData-output'),
+    ], className='row'),
 
 ], className='row')
 
 
 @app.callback(
     [Output('cytoscape-callbacks-1', 'elements'),
-     Output('genCost', 'figure')],
+     Output('genCost', 'columns'),
+     Output('genCost', 'data'),
+     Output('nodeTable', 'columns'),
+     Output('nodeTable', 'data'),
+     Output('clusterData', 'columns'),
+     Output('clusterData', 'data'),
+     Output('clusterData', 'style_data_conditional'),
+     ],
     [Input('my-slider', 'value'),
      Input('upload-data', 'contents'),
      Input('cluster-slider', 'value')],
@@ -125,16 +142,18 @@ def hourUpdate(value, content, nCluster):
     if content:
         content_type, content_string = content.split(',')
         decoded = base64.b64decode(content_string)
-        # print(read_hdf_from_buffer(decoded))
-
-    dataSet = getData(value, nCluster)
-    powerGrid = PowerGrid(dataSet, nCluster)
+        dataSet = getData(value, nCluster, decoded)
+    else:
+        dataSet = getData(value, nCluster)
+    colorsList = Colors(nCluster).getColorList()
+    powerGrid = PowerGrid(dataSet, nCluster, colorsList)
     nodes = [
         {
             'data': {'id': short, 'label': label},
             'grabbable': False,
             'classes': color
         }
+
         for short, label, color in (
             powerGrid.prepNodes()
         )
@@ -142,28 +161,48 @@ def hourUpdate(value, content, nCluster):
 
     edges = [
         {'data': {'id': source + target, 'source': source, 'target': target, 'label': label, 'color': color}}
+
         for target, source, label, color in (
             powerGrid.prepBranches()
         )
     ]
+    genColumns = [{'id': 'Location of Generator', 'name': 'Location of Generator'}]
+    genRows = {'Location of Generator': 'Price of 1 MW'}
+    for col, value in powerGrid.costPlotGenerators():
+        genColumns.append({'id': col, 'name': col})
+        genRows[col] = value
 
+    columns = [{'id': 'Node number', 'name': 'Node number'}]
+    rows = {'Node number': 'Node power balance [MW]'}
+    for col, value in powerGrid.prepNodeDataFrame():
+        columns.append({'id': col, 'name': col})
+        rows[col] = value
 
-    figure = px.bar(powerGrid.costPlotGenerators(),
-                    title=f'Koszt produkcji jednostki energi o godzinie: {value}:00',
-                    x='Lokalizacja generatora',
-                    y='Generowana Moc',
-                    barmode='stack'
-                    )
+    clusterColumns = [{'id': 'Cluster number', 'name': 'Cluster number'}, {'id': 'Max', 'name': 'Max'},
+                      {'id': 'Min', 'name': 'Min'}]
+    clusterRows = []
+    dataCluster = powerGrid.clustersDataFrame()
+    i = 1
+    style_data_conditional = []
+    stylesheet=[]
+    for row in dataCluster.iterrows():
+        clusterDict = {'Cluster number': i, 'Max': "{:.2f}".format(row[1][1]),
+                       'Min': "{:.2f}".format(row[1][0])}
+        i += 1
+        clusterRows.append(clusterDict)
+        style_data_conditional.append({'if': {'row_index': row[0]}, 'backgroundColor': colorsList[int(row[0])]})
 
-    return nodes + edges, figure
+    return nodes + edges, genColumns, [genRows], columns, [rows], clusterColumns, clusterRows, style_data_conditional
 
 
 @app.callback(
-    [Output('cytoscape-callbacks-1', 'stylesheet'),
-     Output('cluster-slider', 'value')],
+    Output('cytoscape-callbacks-1', 'stylesheet'),
     Input('cytoscape-callbacks-1', 'tapNodeData'),
+    Input('cluster-slider', 'value'),
 )
-def displayTapNodeData2(data):
+def displayTapNodeData(data, value):
+    if value != 1:
+        data = None
     if data:
         val = data['id']
         new_style = [{
@@ -189,14 +228,13 @@ def displayTapNodeData2(data):
                 }
             }
         ]
+        return default_stylesheet + new_style
     else:
         return default_stylesheet
-    return default_stylesheet + new_style, 1
 
 
-@app.callback(
-    Output('cytoscape-tapNodeData-json', 'children'),
-    Input('cytoscape-callbacks-1', 'tapNodeData')
-)
-def displayTapNodeData(data):
-    return format(data)
+@app.callback(Output('cytoscape-mouseoverNodeData-output', 'children'),
+              Input('cytoscape-callbacks-1', 'mouseoverNodeData'))
+def displayMouseoverNodeData(data):
+    if data:
+        return "You recently hovered over the city: " + data['label']

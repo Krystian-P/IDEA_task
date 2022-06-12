@@ -1,10 +1,17 @@
-import io
-import h5py
+from config import RELATIVEPATH
 from apps.clustering import *
+import h5py
+import io
 
 
-def getData(hour, nCluster=1):
-    with h5py.File('C:/Users/Krystian/Desktop/IDEA_task/task_data.hdf5', 'r') as f:
+def getData(hour, nCluster=1, buffer=None):
+    if not buffer:
+        dirname = RELATIVEPATH
+        dataSet = dirname + '\data.hdf5'
+    else:
+        dataSet = io.BytesIO(buffer)
+
+    with h5py.File(dataSet, 'r') as f:
         nodes = np.array(f.get(f'/results/hour_{hour}/nodes'))
         branches = np.array(f.get(f'/results/hour_{hour}/branches'))
         gens = np.array(f.get(f'/results/hour_{hour}/gens'))
@@ -15,14 +22,7 @@ def getData(hour, nCluster=1):
                     'branches': branches,
                     'gens': gens
                     }
-
-        return dataDict
-
-
-def read_hdf_from_buffer(buffer):
-    f = io.BytesIO(buffer)
-    h = h5py.File(f, 'r')
-    nodes = np.array(h.get(f'/results/hour_1/nodes'))
+    return dataDict
 
 
 def nodeBalance(nodeArray, branchesArray, generatorsArray):

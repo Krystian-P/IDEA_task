@@ -4,13 +4,14 @@ from models.Gen import Gen
 from models.Node import Node
 from models.Branch import Branch
 
-from config import COLORS
+
 
 class PowerGrid:
 
-    def __init__(self, dictionary, nCluster):
+    def __init__(self, dictionary, nCluster, colorList):
         self.nCluster = nCluster
         self.nodes, self.branches, self.gens = self.createObjects(dictionary)
+        self.colorList = colorList
 
 
     def createObjects(self, dictionary):
@@ -41,24 +42,30 @@ class PowerGrid:
         return gensList
 
     def prepNodes(self):
-        graphNodesList = [(str(node.nod_id), str("{:.2f}".format(node.nod_id)), str(node.positivCheck())) for node in
+        graphNodesList = [(str(node.nod_id), str("{:.0f}".format(node.nod_id)), str(node.positivCheck())) for node in
                           self.nodes]
         return graphNodesList
 
+    def prepNodeDataFrame(self):
+        nodeDataFrame = [(str(node.nod_id), str("{:.2f}".format(node.balance))) for node in self.nodes]
+        return nodeDataFrame
+
     def prepBranches(self):
         graphBranchesList = [(str(branch.node_from), str(branch.node_to), str("{:.2f}".format(branch.flow)),
-                              branch.getColor(self.nCluster)) for branch in self.branches]
+                              str(self.colorList[int(branch.cluster)])) for branch in self.branches]
         return graphBranchesList
 
     def costPlotGenerators(self):
         dataFrameGeneratorsList = [[str(gen.nod_id), "{:.2f}".format(gen.generation)] for gen
                                    in self.gens]
-        dataFrameGeneratorsList = pd.DataFrame(dataFrameGeneratorsList,
-                                               columns=['Lokalizacja generatora', 'Generowana Moc']
-                                               )
         return dataFrameGeneratorsList
 
-    def nodeBalanceDataFrame(self):
-        pass
+    def clustersDataFrame(self):
+        dataFrameBranchesList=[[branch.cluster, branch.flow] for branch in self.branches]
+        dataFrame = pd.DataFrame(dataFrameBranchesList, columns=['cluster', 'flow'])
+        groupedData = dataFrame.groupby('cluster')
+        maximums = groupedData.max()
+        minimums = groupedData.min()
+        clusterData = minimums.merge(maximums, how='left', on='cluster')
 
-
+        return clusterData.sort_values(by=['flow_x'])

@@ -1,6 +1,5 @@
 from config import COLORS
 
-
 class Branch:
 
     def __init__(self, node_from, node_to, flow=0, cluster=0):
@@ -11,6 +10,6 @@ class Branch:
 
     def getColor(self, nCluster):
         if nCluster <= 1:
-            return COLORS[0]
+            return 'grey'
         else:
-            return COLORS[int(self.cluster)]
+            return COLORS[int(self.cluster)-1]
