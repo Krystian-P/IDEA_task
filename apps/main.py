@@ -39,6 +39,18 @@ default_stylesheet = [
         'style': {
             'background-color': 'red',
         }
+    },
+    {
+        'selector': '.blue',
+        'style': {
+            'background-color': 'blue',
+        }
+    },
+    {
+        'selector': '.triangle',
+        'style': {
+            'shape': 'triangle',
+        }
     }
 ]
 styles = {
@@ -52,6 +64,7 @@ styles = {
 
 app.layout = html.Div([
     html.Div([html.H3("Power Grid Analysis")], style={'textAlign': "center"}),
+    
     html.Div([html.P("Hour: ", className='six columns'),
               html.P("Amount of clusters:", className='three columns')],
              style={'textAlign': "center"},
@@ -63,11 +76,13 @@ app.layout = html.Div([
                    id='my-slider',
                    className='six columns'
                    ),
+        
         dcc.Slider(1, 15, 1,
                    value=1,
                    id='cluster-slider',
                    className='three columns'
                    ),
+        
         dcc.Upload(id='upload-data',
                    children=html.Div([
                        'Drag and drop or',
@@ -86,6 +101,7 @@ app.layout = html.Div([
                    className='two columns'
                    )
     ], className='row'),
+    
     html.Div([
         cyto.Cytoscape(
             id='cytoscape-callbacks-1',
@@ -106,19 +122,49 @@ app.layout = html.Div([
             style_table={'width': '20%'}
         )
     ], className='row'),
+    
+    html.Div([
+        html.P("Legend: ", className='six columns'),
+        html.P("Genreators:", className='six columns')],
+        style={'textAlign': "center"},
+        className='row'),
+    
+    html.Div(   
+        cyto.Cytoscape(
+            id='cytoscape-legend',
+            elements=[
+                {'data': {'id': 'one', 'label': 'nr. węzła \n Power Balance < 0', 'classes': 'red'},
+                {'data': {'id': 'one', 'label': 'nr. węzła \n Power Balance > 0', 'classes': 'green'},
+                {'data': {'id': 'one', 'label': 'nr. węzła \n Power Balance = 0', 'classes': 'blue'},
+                {'data': {'id': 'one', 'label': 'nr. węzła \n Node with generator', 'classes': 'triangle'},
+                {'data': {'source': 'one', 'target': 'two', 'label': 'Power flow'}}
+            ],
+            style={'width': '50%', 'height': '100px'},
+            layout={
+                'name': 'grid'
+            },
+            responsive=True,
+            zoom=100,
+            userZoomingEnabled=False,
+            userPanningEnabled=False,
+            stylesheet=default_stylesheet
+        ),
+             
+        dash_table.DataTable(
+            id='genCost',
+            style_cell={'textAlign': 'center'},
+            style_table={'width': '50%'}
+        ),
+        html.P(id='cytoscape-mouseoverNodeData-output'),
+        ], className='row'),
+             
+    html.P("Nodes balance: ", style={'textAlign': "center"}),
+             
     html.Div([
         dash_table.DataTable(
             id='nodeTable',
             style_cell={'textAlign': 'center'},
         ),
-
-    ], className='row'),
-    html.Div([dash_table.DataTable(
-        id='genCost',
-        style_cell={'textAlign': 'center'},
-        style_table={'width': '50%'}
-    ),
-        html.P(id='cytoscape-mouseoverNodeData-output'),
     ], className='row'),
 
 ], className='row')
