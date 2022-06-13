@@ -7,9 +7,7 @@ class Node:
         self.balance = balance
 
     def positivCheck(self):
-        if self.balance > 0:
+        if self.balance >= 0:
             return 'green'
-        elif self.balance == 0.00:
-            return 'blue'
         else:
             return 'red'
