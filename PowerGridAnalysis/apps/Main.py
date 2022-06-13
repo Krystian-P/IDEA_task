@@ -177,8 +177,8 @@ def hourUpdate(value, content, nCluster, data):
     ]
     # Generators info
     genColumns = [{'id': 'Location of Generator', 'name': 'Location of Generator'}]
-    genRows = {'Location of Generator': 'Price of 1 MW'}
-    for col, value in powerGrid.costPlotGenerators():
+    genRows = {'Location of Generator': 'Power Generating'}
+    for col, value in powerGrid.genrationPlotGenerators():
         genColumns.append({'id': col, 'name': col})
         genRows[col] = value
     # Node balance info

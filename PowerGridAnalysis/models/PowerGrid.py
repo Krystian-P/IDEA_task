@@ -63,7 +63,7 @@ class PowerGrid:
                                   str(self.colorList[int(branch.cluster)])) for branch in self.branches]
         return graphBranchesList
 
-    def costPlotGenerators(self):
+    def genrationPlotGenerators(self):
         dataFrameGeneratorsList = [[str(gen.nod_id), "{:.2f}".format(gen.generation)] for gen
                                    in self.gens]
         return dataFrameGeneratorsList
