@@ -37,7 +37,7 @@ Application should start and be reachable at localhost:8050
 4- Clusters Info
 5- Hover Node Info
 6- Generators Statistics
-7- Node Balance(gen.generate - node.demand)
+7- Node Balance(gen.generate - node.demand - branchFlow.from + branchFlow.to)
 
 To observ information about power flow from and to node set cluters amount to 1, and tap the node
 ![image](https://user-images.githubusercontent.com/83120622/173435656-9e76d0e3-c830-47db-9349-22f2ea82bc6d.png)
