@@ -33,7 +33,7 @@ Once the build finishes run docker-compose up -d. Application should start and b
 4- Clusters Info
 5- Hover Node Info
 6- Generators Statistics
-7- Node Balance
+7- Node Balance(gen.generate - node.demand)
 
 To observ information about power flow from and to node set cluters amount to 1, and tap the node
 ![image](https://user-images.githubusercontent.com/83120622/173417738-33debf5c-0347-4064-98de-ece631f3e822.png)
