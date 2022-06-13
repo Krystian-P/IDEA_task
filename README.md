@@ -19,9 +19,9 @@ Docker and docker-compose installed with linux containers. (optional)
 
 ## Building and running
 
-To build the project run docker-compose build command.
+To build the project run "docker build . -t dash-app:latest" command.
 
-Once the build finishes run docker-compose up -d. Application should start and be reachable at localhost
+Once the build finishes run "docker run -P -d dash-app:latest". Application should start and be reachable at l0.0.0.0:8050
 
 ## Functionalities
 
