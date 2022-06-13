@@ -19,9 +19,13 @@ Docker and docker-compose installed with linux containers. (optional)
 
 ## Building and running
 
+PowerGridDocker version 
+
 To build the project run "docker build . -t dash-app:latest" command.
 
-Once the build finishes run "docker run -P -d dash-app:latest". Application should start and be reachable at l0.0.0.0:8050
+Once the build finishes run "docker run -P -d dash-app:latest". 
+
+Application should start and be reachable at localhost:8050
 
 ## Functionalities
 
