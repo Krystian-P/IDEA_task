@@ -141,71 +141,45 @@ app.layout = html.Div([
      Input('cytoscape-callbacks-1', 'mouseoverNodeData')],
 )
 def hourUpdate(value, content, nCluster, data):
+
     # get byte string from uploaded data
     if content:
         content_type, content_string = content.split(',')
         decoded = base64.b64decode(content_string)
         dataSet = getData(value, nCluster, decoded)
-    # get data from defoult datafile
+    # get data from default datafile
     else:
         dataSet = getData(value, nCluster)
+
     # Color List for n of clusters
     colorsList = Colors(nCluster).getColorList()
+
     # Object of Power Grid Class
     powerGrid = PowerGrid(dataSet, colorsList, nCluster)
+
     # Cytoscape Nodes
-    nodes = [
-        {
-            'data': {'id': short, 'label': label},
-            'grabbable': False,
-            'classes': color
-        }
+    nodes = powerGrid.prepNodes()
 
-        for short, label, color in (
-            powerGrid.prepNodes()
-        )
-    ]
     # Cytoscape Edges
-    edges = [
-        {'data': {'id': source + target, 'source': source, 'target': target, 'label': label, 'color': color}}
+    edges = powerGrid.prepBranches()
 
-        for source, target, label, color in (
-            powerGrid.prepBranches()
-        )
-    ]
     # Generators info
-    genColumns = [{'id': 'Location of Generator', 'name': 'Location of Generator'}]
-    genRows = {'Location of Generator': 'Power Generating'}
-    for col, value in powerGrid.genrationPlotGenerators():
-        genColumns.append({'id': col, 'name': col})
-        genRows[col] = value
+    genColumns, genRows = powerGrid.genrationPlotGenerators()
 
     # Node balance info
-    nodeColumns = [{'id': 'Node number', 'name': 'Node number'}]
-    nodeRows = {'Node number': 'Node power balance [MW]'}
-    for col, value in powerGrid.prepNodeDataFrame():
-        nodeColumns.append({'id': col, 'name': col})
-        nodeRows[col] = value
+    nodeColumns, nodeRows = powerGrid.prepNodeDataFrame()
 
     # Cluster Info
-    clusterRows = []
-    style_data_conditional = []
-    dataCluster = powerGrid.clustersDataFrame()
-    for row in dataCluster.iterrows():
-        clusterDict = {'Cluster number': row[0], 'Max': "{:.2f}".format(row[1][1]),
-                       'Min': "{:.2f}".format(row[1][0])}
-        clusterRows.append(clusterDict)
-        style_data_conditional.append({'if': {'row_index': row[0]}, 'backgroundColor': colorsList[int(row[0])]})
-    # Node info
+    clusterRows, style_data_conditional = powerGrid.clustersDataFrame(colorsList)
+
+    # Node stats
     if data:
-        nodeDict = powerGrid.getNodeInfo(data['label'])
-        dataRows = [{'Node Id': nodeDict['Node Id'], 'Node Type': nodeDict["Node Type"],
-                     'Node Demand': nodeDict['Node Demand']}]
+        dataRows = powerGrid.getNodeInfo(data['label'])
     else:
         dataRows = []
 
-    return nodes + edges, genColumns, [genRows], nodeColumns, [
-        nodeRows], clusterRows, style_data_conditional, dataRows
+    return nodes + edges, genColumns, [genRows], nodeColumns, \
+           [nodeRows], clusterRows, style_data_conditional, dataRows
 
 
 @app.callback(
