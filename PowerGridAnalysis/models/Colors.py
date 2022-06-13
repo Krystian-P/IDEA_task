@@ -1,7 +1,8 @@
 from colour import Color
 
+
 class Colors:
-    def __init__(self, nCLusters = 1):
+    def __init__(self, nCLusters=1):
         self.colorList = self.getRadientList(nCLusters)
         self.lenght = nCLusters
 

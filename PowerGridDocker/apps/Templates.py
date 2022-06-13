@@ -1,3 +1,4 @@
+# basic style templates
 default_stylesheet = [
     {
         'selector': 'node',

@@ -1,12 +1,10 @@
-import json
-
 from models.PowerGrid import PowerGrid
 from models.Colors import Colors
-import dash_cytoscape as cyto
 from dash import html, dcc, Input, Output, Dash, dash_table
 from apps.DataParse import *
 from apps.Templates import *
 
+import dash_cytoscape as cyto
 import base64
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -91,8 +89,8 @@ app.layout = html.Div([
             id='cytoscape-legend',
             elements=[
                 {'data': {'id': 'one', 'label': 'Power Balance < 0'}, 'classes': 'red'},
-                {'data': {'id': 'two', 'label': 'Power Balance > 0'}, 'classes': 'green'},
-                {'data': {'id': 'three', 'label': 'Power Balance = 0'}, 'classes': 'blue'},
+                {'data': {'id': 'two', 'label': 'Power Balance = 0'}, 'classes': 'green'},
+                {'data': {'id': 'three', 'label': 'Picked Node'}, 'classes': 'blue'},
                 {'data': {'source': 'one', 'target': 'two', 'label': 'Power flow'}}
             ],
             stylesheet=default_stylesheet,
@@ -145,14 +143,19 @@ app.layout = html.Div([
      Input('cytoscape-callbacks-1', 'mouseoverNodeData')],
 )
 def hourUpdate(value, content, nCluster, data):
+    # get byte string from uploaded data
     if content:
         content_type, content_string = content.split(',')
         decoded = base64.b64decode(content_string)
         dataSet = getData(value, nCluster, decoded)
+    # get data from defoult datafile
     else:
         dataSet = getData(value, nCluster)
+    # Color List for n of clusters
     colorsList = Colors(nCluster).getColorList()
+    # Object of Power Grid Class
     powerGrid = PowerGrid(dataSet, colorsList, nCluster)
+    # Cytoscape Nodes
     nodes = [
         {
             'data': {'id': short, 'label': label},
@@ -164,7 +167,7 @@ def hourUpdate(value, content, nCluster, data):
             powerGrid.prepNodes()
         )
     ]
-
+    # Cytoscape Edges
     edges = [
         {'data': {'id': source + target, 'source': source, 'target': target, 'label': label, 'color': color}}
 
@@ -172,19 +175,20 @@ def hourUpdate(value, content, nCluster, data):
             powerGrid.prepBranches()
         )
     ]
-
+    # Generators info
     genColumns = [{'id': 'Location of Generator', 'name': 'Location of Generator'}]
     genRows = {'Location of Generator': 'Price of 1 MW'}
     for col, value in powerGrid.costPlotGenerators():
         genColumns.append({'id': col, 'name': col})
         genRows[col] = value
-
+    # Node balance info
     nodeColumns = [{'id': 'Node number', 'name': 'Node number'}]
     nodeRows = {'Node number': 'Node power balance [MW]'}
     for col, value in powerGrid.prepNodeDataFrame():
         nodeColumns.append({'id': col, 'name': col})
         nodeRows[col] = value
 
+    # Cluster Info
     clusterRows = []
     style_data_conditional = []
     dataCluster = powerGrid.clustersDataFrame()
@@ -193,7 +197,7 @@ def hourUpdate(value, content, nCluster, data):
                        'Min': "{:.2f}".format(row[1][0])}
         clusterRows.append(clusterDict)
         style_data_conditional.append({'if': {'row_index': row[0]}, 'backgroundColor': colorsList[int(row[0])]})
-
+    # Node info
     if data:
         nodeDict = powerGrid.getNodeInfo(data['label'])
         dataRows = [{'Node Id': nodeDict['Node Id'], 'Node Type': nodeDict["Node Type"],
@@ -211,6 +215,7 @@ def hourUpdate(value, content, nCluster, data):
     Input('cluster-slider', 'value'),
 )
 def displayTapNodeData(data, value):
+    # Node specific information
     if value != 1:
         data = None
     if data:
@@ -234,7 +239,7 @@ def displayTapNodeData(data, value):
             {
                 'selector': f'[id = "{val}"]',
                 'style': {
-                    'background-color': 'purple',
+                    'background-color': 'blue',
                 }
             }
         ]

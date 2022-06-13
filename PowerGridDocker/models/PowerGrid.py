@@ -18,7 +18,8 @@ class PowerGrid:
         gensList = self.createGens(dictionary['gens'])
         return [nodesList, branchesList, gensList]
 
-    def createNodes(self, dictionary):
+    @staticmethod
+    def createNodes(dictionary):
         nodeList = []
         for row in dictionary:
             if round(row[3], 3) == -0:
@@ -27,7 +28,8 @@ class PowerGrid:
             nodeList.append(node)
         return nodeList
 
-    def createBranches(self, dictionary):
+    @staticmethod
+    def createBranches(dictionary):
         branchList = []
         for row in dictionary:
             branch = Branch(row[0], row[1], row[2], row[3])
@@ -35,7 +37,8 @@ class PowerGrid:
 
         return branchList
 
-    def createGens(self, dictionary):
+    @staticmethod
+    def createGens(dictionary):
         gensList = []
         for row in dictionary:
             gen = Gen(row[0], row[1], row[2])
