@@ -48,6 +48,11 @@ class PowerGrid:
     def prepNodes(self):
         graphNodesList = [(str(node.nod_id), str("{:.0f}".format(node.nod_id)), str(node.positivCheck())) for node in
                           self.nodes]
+        for gen in self.gens:
+            if self.nodes[int(gen.nod_id)-1].balance >= 0:
+                graphNodesList[int(gen.nod_id)-1] = (str(gen.nod_id), str("{:.0f}".format(gen.nod_id)), 'generatorP')
+            else:
+                graphNodesList[int(gen.nod_id) - 1] = (str(gen.nod_id), str("{:.0f}".format(gen.nod_id)), 'generatorN')
         return graphNodesList
 
     def prepNodeDataFrame(self):

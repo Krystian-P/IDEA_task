@@ -90,7 +90,7 @@ app.layout = html.Div([
             elements=[
                 {'data': {'id': 'one', 'label': 'Power Balance < 0'}, 'classes': 'red'},
                 {'data': {'id': 'two', 'label': 'Power Balance = 0'}, 'classes': 'green'},
-                {'data': {'id': 'three', 'label': 'Picked Node'}, 'classes': 'blue'},
+                {'data': {'id': 'three', 'label': 'Node with generator'}, 'classes': 'generator'},
                 {'data': {'source': 'one', 'target': 'two', 'label': 'Power flow'}}
             ],
             stylesheet=default_stylesheet,
@@ -120,8 +120,6 @@ app.layout = html.Div([
             style_cell={'textAlign': 'center'},
         ),
     ], className='row'),
-    dcc.Store(id='dataSet'),
-    dcc.Store(id='colorList'),
 ], className='row',
 
 )
@@ -181,6 +179,7 @@ def hourUpdate(value, content, nCluster, data):
     for col, value in powerGrid.genrationPlotGenerators():
         genColumns.append({'id': col, 'name': col})
         genRows[col] = value
+
     # Node balance info
     nodeColumns = [{'id': 'Node number', 'name': 'Node number'}]
     nodeRows = {'Node number': 'Node power balance [MW]'}

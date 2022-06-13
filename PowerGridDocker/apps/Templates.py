@@ -37,6 +37,26 @@ default_stylesheet = [
             'background-color': 'blue',
         }
     },
+    {
+        'selector': '.generatorP',
+        'style': {
+            'shape': 'square',
+            'background-color': 'green',
+        }
+    },
+    {
+        'selector': '.generatorN',
+        'style': {
+            'shape': 'square',
+            'background-color': 'red',
+        }
+    },
+    {
+        'selector': '.generator',
+        'style': {
+            'shape': 'square',
+        }
+    },
 ]
 
 styles = {
