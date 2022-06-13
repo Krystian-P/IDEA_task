@@ -23,7 +23,7 @@ PowerGridDocker version
 
 To build the project run "docker build . -t dash-app:latest" command.
 
-Once the build finishes run "docker run -P -d dash-app:latest". 
+Once the build finishes run "docker run -p 8050:8050 dash-app:latest". 
 
 Application should start and be reachable at localhost:8050
 
