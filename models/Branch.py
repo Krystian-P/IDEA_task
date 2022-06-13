@@ -1,4 +1,4 @@
-from config import COLORS
+
 
 class Branch:
 
@@ -8,8 +8,8 @@ class Branch:
         self.flow = flow
         self.cluster = cluster
 
-    def getColor(self, nCluster):
-        if nCluster <= 1:
-            return 'grey'
-        else:
-            return COLORS[int(self.cluster)-1]
+    # def getColor(self, nCluster):
+    #     if nCluster <= 1:
+    #         return 'grey'
+    #     else:
+    #         return COLORS[int(self.cluster)-1]

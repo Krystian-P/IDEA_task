@@ -5,14 +5,12 @@ from models.Node import Node
 from models.Branch import Branch
 
 
-
 class PowerGrid:
 
-    def __init__(self, dictionary, nCluster, colorList):
-        self.nCluster = nCluster
+    def __init__(self, dictionary, colorList, nClusters=1):
         self.nodes, self.branches, self.gens = self.createObjects(dictionary)
         self.colorList = colorList
-
+        self.nClusters = nClusters
 
     def createObjects(self, dictionary):
         nodesList = self.createNodes(dictionary['nodes'])
@@ -23,6 +21,8 @@ class PowerGrid:
     def createNodes(self, dictionary):
         nodeList = []
         for row in dictionary:
+            if round(row[3], 3) == -0:
+                row[3] = 0
             node = Node(row[0], row[1], row[2], row[3])
             nodeList.append(node)
         return nodeList
@@ -32,6 +32,7 @@ class PowerGrid:
         for row in dictionary:
             branch = Branch(row[0], row[1], row[2], row[3])
             branchList.append(branch)
+
         return branchList
 
     def createGens(self, dictionary):
@@ -51,8 +52,12 @@ class PowerGrid:
         return nodeDataFrame
 
     def prepBranches(self):
-        graphBranchesList = [(str(branch.node_from), str(branch.node_to), str("{:.2f}".format(branch.flow)),
-                              str(self.colorList[int(branch.cluster)])) for branch in self.branches]
+        if self.nClusters == 1:
+            graphBranchesList = [(str(branch.node_from), str(branch.node_to), str("{:.2f}".format(branch.flow)),
+                                  'grey') for branch in self.branches]
+        else:
+            graphBranchesList = [(str(branch.node_from), str(branch.node_to), str("{:.2f}".format(branch.flow)),
+                                  str(self.colorList[int(branch.cluster)])) for branch in self.branches]
         return graphBranchesList
 
     def costPlotGenerators(self):
@@ -60,8 +65,17 @@ class PowerGrid:
                                    in self.gens]
         return dataFrameGeneratorsList
 
+    def getNodeInfo(self, nodeId):
+        node = self.nodes[int(nodeId) - 1]
+        noteDict = {
+            "Node Id": node.nod_id,
+            "Node Type": node.node_type,
+            'Node Demand': "{:.2f}".format(node.demand)
+        }
+        return noteDict
+
     def clustersDataFrame(self):
-        dataFrameBranchesList=[[branch.cluster, branch.flow] for branch in self.branches]
+        dataFrameBranchesList = [[branch.cluster, branch.flow] for branch in self.branches]
         dataFrame = pd.DataFrame(dataFrameBranchesList, columns=['cluster', 'flow'])
         groupedData = dataFrame.groupby('cluster')
         maximums = groupedData.max()
