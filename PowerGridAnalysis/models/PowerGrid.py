@@ -1,5 +1,5 @@
 import pandas as pd
-
+import json
 from models.Gen import Gen
 from models.Node import Node
 from models.Branch import Branch
@@ -45,6 +45,9 @@ class PowerGrid:
             gensList.append(gen)
         return gensList
 
+    def toJson(self):
+        return json.dumps(self, default=lambda o: o.__dict__)
+
     def prepNodes(self):
         graphNodesList = [(str(node.nod_id), str("{:.0f}".format(node.nod_id)), str(node.positivCheck())) for node in
                           self.nodes]
@@ -72,8 +75,11 @@ class PowerGrid:
         nodeColumns = [{'id': 'Node number', 'name': 'Node number'}]
         nodeRows = {'Node number': 'Node power balance [MW]'}
         for col, value in nodeDataFrame:
-            nodeColumns.append({'id': col, 'name': col})
-            nodeRows[col] = value
+            if value != '0.00':
+                nodeColumns.append({'id': col, 'name': col})
+                nodeRows[col] = value
+            else:
+                continue
         return nodeColumns, nodeRows
 
     def prepBranches(self):

@@ -3,10 +3,16 @@ from models.Colors import Colors
 from dash import html, dcc, Input, Output, Dash, dash_table
 from apps.DataParse import *
 from apps.Templates import *
+from collections import namedtuple
+from guppy import hpy
+
 
 import dash_cytoscape as cyto
 import base64
 
+h = hpy()
+
+print(h.heap())
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = Dash(__name__, external_stylesheets=external_stylesheets)
 
@@ -98,9 +104,8 @@ app.layout = html.Div([
             layout={
                 'name': 'grid'
             },
-            zoom=100,
-            userZoomingEnabled=True,
-            userPanningEnabled=True,
+            userZoomingEnabled=False,
+            userPanningEnabled=False,
             className='six columns'
         ),
 
@@ -112,14 +117,16 @@ app.layout = html.Div([
 
     ], className='row'),
 
-    html.P("Nodes balance: ", style={'textAlign': "center"}),
+    html.P("Unbalanced Nodes: ", style={'textAlign': "center"}, className='six columns'),
 
     html.Div([
         dash_table.DataTable(
             id='nodeTable',
             style_cell={'textAlign': 'center'},
+            style_table={'width': '75%'}
         ),
     ], className='row'),
+    dcc.Store(id='powerGrid')
 ], className='row',
 
 )
@@ -127,21 +134,15 @@ app.layout = html.Div([
 
 @app.callback(
     [Output('cytoscape-callbacks-1', 'elements'),
-     Output('genCost', 'columns'),
-     Output('genCost', 'data'),
-     Output('nodeTable', 'columns'),
-     Output('nodeTable', 'data'),
      Output('clusterData', 'data'),
      Output('clusterData', 'style_data_conditional'),
-     Output('nodeData', 'data'),
+     Output('powerGrid', 'data')
      ],
     [Input('my-slider', 'value'),
      Input('upload-data', 'contents'),
-     Input('cluster-slider', 'value'),
-     Input('cytoscape-callbacks-1', 'mouseoverNodeData')],
+     Input('cluster-slider', 'value')]
 )
-def hourUpdate(value, content, nCluster, data):
-
+def hourUpdate(value, content, nCluster):
     # get byte string from uploaded data
     if content:
         content_type, content_string = content.split(',')
@@ -163,23 +164,62 @@ def hourUpdate(value, content, nCluster, data):
     # Cytoscape Edges
     edges = powerGrid.prepBranches()
 
-    # Generators info
-    genColumns, genRows = powerGrid.genrationPlotGenerators()
-
-    # Node balance info
-    nodeColumns, nodeRows = powerGrid.prepNodeDataFrame()
-
     # Cluster Info
     clusterRows, style_data_conditional = powerGrid.clustersDataFrame(colorsList)
 
+    # Generators info
+    # genColumns, genRows = powerGrid.genrationPlotGenerators()
+
+    # Node balance info
+    # nodeColumns, nodeRows = powerGrid.prepNodeDataFrame()
+
+    # Node stats
+    # if data:
+    #     dataRows = powerGrid.getNodeInfo(data['label'])
+    # else:
+    #     dataRows = []
+
+    return nodes + edges, clusterRows, style_data_conditional, [dataSet, colorsList, nCluster]
+
+
+# Generators info
+@app.callback(
+    [Output('genCost', 'columns'),
+     Output('genCost', 'data')],
+    Input('powerGrid', 'data')
+)
+def generatorsInfo(dataSet):
+    powerGrid = PowerGrid(dataSet[0], dataSet[1], dataSet[2])
+    genColumns, genRows = powerGrid.genrationPlotGenerators()
+    return genColumns, [genRows]
+
+
+# Node stats
+@app.callback(
+    Output('nodeData', 'data'),
+    [Input('powerGrid', 'data'),
+     Input('cytoscape-callbacks-1', 'mouseoverNodeData')]
+)
+def nodeStats(dataSet, data):
+    powerGrid = PowerGrid(dataSet[0], dataSet[1], dataSet[2])
     # Node stats
     if data:
         dataRows = powerGrid.getNodeInfo(data['label'])
     else:
         dataRows = []
+    return dataRows
 
-    return nodes + edges, genColumns, [genRows], nodeColumns, \
-           [nodeRows], clusterRows, style_data_conditional, dataRows
+
+# Node balance info
+@app.callback(
+    [Output('nodeTable', 'columns'),
+     Output('nodeTable', 'data'), ],
+    Input('powerGrid', 'data')
+)
+def nodesBalanceInfo(dataSet):
+    powerGrid = PowerGrid(dataSet[0], dataSet[1], dataSet[2])
+    nodeColumns, nodeRows = powerGrid.prepNodeDataFrame()
+    return nodeColumns, [nodeRows],
 
 
 @app.callback(
@@ -219,3 +259,7 @@ def displayTapNodeData(data, value):
         return default_stylesheet + new_style
     else:
         return default_stylesheet
+
+
+def customStudentDecoder(gridDict):
+    return namedtuple('X', gridDict.keys())(*gridDict.values())
