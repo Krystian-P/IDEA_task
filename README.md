@@ -13,7 +13,12 @@ Exeption Class
 
 Memory useage with separate powerGrid Objects for callbacks in main
 
+in Develop
 ![image](https://user-images.githubusercontent.com/83120622/173667690-ada24eaf-0a7c-483b-a95c-a6ff5c330279.png)
+
+Current main version
+![image](https://user-images.githubusercontent.com/83120622/173674528-72ae6570-a9b0-42f4-bf8a-0cd857449318.png)
+
 
 
 ### Dash Power Grid Analysis
