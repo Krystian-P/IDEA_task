@@ -13,7 +13,7 @@ Exeption Class
 
 Memory useage with separate powerGrid Objects for callbacks in main
 
-in Develop
+in Develop(About 0,5MB more, in this case better choice, cleaner code, easier to maintain and develop)
 
 ![image](https://user-images.githubusercontent.com/83120622/173667690-ada24eaf-0a7c-483b-a95c-a6ff5c330279.png)
 
