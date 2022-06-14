@@ -11,6 +11,11 @@ Data validation
 
 Exeption Class
 
+Memory useage with separate powerGrid Objects for callbacks in main
+
+![image](https://user-images.githubusercontent.com/83120622/173667690-ada24eaf-0a7c-483b-a95c-a6ff5c330279.png)
+
+
 ### Dash Power Grid Analysis
 
 Dashboard visualization base on dash component Cytoscape
