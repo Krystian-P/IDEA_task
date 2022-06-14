@@ -6,6 +6,8 @@ Dashboard visualization base on dash component Cytoscape
 
 Clustering algorythm KMeans
 
+Note: Nodes with generator in lates version marked as squers (images to update)
+
 ![image](https://user-images.githubusercontent.com/83120622/173435540-a10cf463-f9c6-41f4-a3e0-f7c11090581d.png)
 
 ## Pre-requisites 
