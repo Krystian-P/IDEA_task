@@ -6,9 +6,7 @@ Dashboard visualization base on dash component Cytoscape
 
 Clustering algorythm KMeans
 
-Note: Nodes with generator in lates version marked as squers (images to update)
-
-![image](https://user-images.githubusercontent.com/83120622/173435540-a10cf463-f9c6-41f4-a3e0-f7c11090581d.png)
+![image](https://user-images.githubusercontent.com/83120622/173635762-6eaf443a-81e4-4e0c-b597-19eada4bce18.png)
 
 ## Pre-requisites 
 
@@ -31,7 +29,7 @@ Application should start and be reachable at localhost:8050
 
 ## Functionalities
 
-![image](https://user-images.githubusercontent.com/83120622/173435875-32061c3e-525f-4cc9-bda4-b30bad6ea685.png)
+![image](https://user-images.githubusercontent.com/83120622/173636028-91889c60-e9eb-4831-9497-d94b29c7b8c0.png)
 
 1- Choose hour 
 2- Amount of clusters
@@ -42,5 +40,5 @@ Application should start and be reachable at localhost:8050
 7- Node Balance(gen.generate - node.demand - branchFlow.from + branchFlow.to)
 
 To observ information about power flow from and to node set cluters amount to 1, and tap the node
-![image](https://user-images.githubusercontent.com/83120622/173435656-9e76d0e3-c830-47db-9349-22f2ea82bc6d.png)
+![image](https://user-images.githubusercontent.com/83120622/173636173-31b60985-5060-4f56-b932-f0a7c112b9d5.png)
 
